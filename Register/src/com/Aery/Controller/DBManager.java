@@ -24,31 +24,24 @@ public class DBManager {
 
     // 插入数据库的一行 Serve 数据
     public static void updateServer(ServerInfo info, String ip) throws SQLException {
-        String sql =" if not exists (select 1 from server_info where name = ?)" +
-                    "      insert into server_info(ip,name,maxcount,nowcount,ontime,socketport) values(?,?,?,?,getdate(),?)" +
-                    "   else" +
-                    "      update server_info set (ip,maxcount,nowcount,ontime,socketport)  = (?,?,?,getdate(),?) " +
-                    "   where name = ?"
-                ;
+        String sql =
+            "INSERT INTO server_info(ip,name,maxcount,nowcount,ontime,socketport) " +
+                    "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY " +
+                    "UPDATE ip=VALUES(ip),maxcount=VALUES(maxcount),nowcount=VALUES(nowcount),ontime=VALUES(ontime),socketport=VALUES(socketport)";
+
+        System.out.println(sql);
 
         PreparedStatement ptm = conn.prepareStatement(sql); //预编译SQL，减少sql执行
 
         //传参
-        ptm.setString(1, info.msg.name);
-
-        ptm.setString(2, ip);
-        ptm.setString(3, info.msg.name);
-        ptm.setInt(4, info.msg.maxOverload);
-        ptm.setInt(5, info.currentOverload);
+        ptm.setString(1, ip);
+        ptm.setString(2, info.msg.name);
+        ptm.setInt(3, info.msg.maxOverload);
+        ptm.setInt(4, info.currentOverload);
+        java.util.Date utilDate = new java.util.Date();
+        java.sql.Date sqlDate = new java.sql.Date(utilDate.getTime());
+        ptm.setDate(5, sqlDate);
         ptm.setInt(6, info.msg.port);
-
-        ptm.setString(7, ip);
-        ptm.setInt(8, info.msg.maxOverload);
-        ptm.setInt(9, info.currentOverload);
-        ptm.setInt(10, info.msg.port);
-
-        ptm.setString(11, info.msg.name);
-
         //执行
         ptm.execute();
     }
@@ -66,30 +59,21 @@ public class DBManager {
 
     // 更新数据库的一行 Client 数据
     public static void insertClient(SocketMsg msg,String serve, String ip) throws SQLException {
-        String sql =" if not exists (select 1 from client_info where name = ?)" +
-                "      insert into client_info(ip,name,servername,nowcount,clientPort,status) values(?,?,?,?,?,?)" +
-                "   else" +
-                "      update client_info set (ip,servername,nowcount,clientPort,status) = (?,?,?,?,?) where where name = ?"
-                ;
+
+        String sql =
+        "INSERT INTO client_info(ip,name,servername,nowcount,clientPort,status) " +
+                "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY " +
+                "UPDATE ip=VALUES(ip),servername=VALUES(servername),nowcount=VALUES(nowcount),clientPort=VALUES(clientPort),status=VALUES(status)";
 
         PreparedStatement ptm = conn.prepareStatement(sql); //预编译SQL，减少sql执行
 
         //传参
-        ptm.setString(1, msg.name);
-
-        ptm.setString(2, ip);
+        ptm.setString(1, ip);
+        ptm.setString(2, msg.name);
         ptm.setString(3, serve);
         ptm.setInt(4, 1);
         ptm.setInt(5, msg.port);
         ptm.setInt(6, msg.isOnline);
-
-        ptm.setString(7, ip);
-        ptm.setString(8, serve);
-        ptm.setInt(9, 1);
-        ptm.setInt(10, msg.port);
-        ptm.setInt(11, msg.isOnline);
-
-        ptm.setString(12, msg.name);
 
         //执行
         ptm.execute();

@@ -18,8 +18,8 @@ public class ServerListener extends Thread{
     // 一直循环监听的线程
     public void Listen(){
         try {
+            ServerSocket ss = new ServerSocket(30000);
             while(!closeFlag){
-                ServerSocket ss = new ServerSocket(30000);
                 System.out.println("监听....");
                 Socket s = ss.accept();
                 System.out.println("Server:"+s.getInetAddress().getLocalHost()+"已连接到 Register");
@@ -34,6 +34,7 @@ public class ServerListener extends Thread{
                 System.out.println("Server Msg："+ string);
                 ReceiveServerMsg(msg,ip);
 
+                System.out.println("Server 成功处理");
             }
         } catch (IOException e) {
             e.printStackTrace();

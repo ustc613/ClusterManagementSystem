@@ -20,8 +20,8 @@ public class ClientListener extends Thread {
     // 一直循环监听的线程
     public void Listen(){
         try {
+            ServerSocket ss = new ServerSocket(30001);
             while(!closeFlag){
-                ServerSocket ss = new ServerSocket(30001);
                 System.out.println("监听....");
                 Socket s = ss.accept();
                 System.out.println("Client:"+s.getInetAddress().getLocalHost()+"已连接到 Register");
@@ -35,6 +35,8 @@ public class ClientListener extends Thread {
 
                 System.out.println("Client Msg："+ msg);
                 ReceiveClientMsg(msg,ip);
+
+                System.out.println("Client 成功处理");
             }
         } catch (IOException e) {
             e.printStackTrace();
