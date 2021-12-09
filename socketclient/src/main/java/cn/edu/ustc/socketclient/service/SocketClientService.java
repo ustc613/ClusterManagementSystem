@@ -45,7 +45,7 @@ public class SocketClientService {
     }
 
     private ServerInfoMsg messageToRegister(SocketMsg socketMsg) {
-        try (Socket sock = new Socket("localhost", 30000);
+        try (Socket sock = new Socket("localhost", 30001);
              InputStream input = sock.getInputStream();
              OutputStream output = sock.getOutputStream()) {
             log.info("connect register success.");
