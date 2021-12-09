@@ -2,6 +2,7 @@ package cn.edu.ustc.socketserver.listener;
 
 import cn.edu.ustc.socketserver.config.SocketServerConfig;
 import cn.edu.ustc.socketserver.model.support.SocketMsg;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -43,7 +44,6 @@ public class SocketServerListener implements ApplicationListener<ApplicationRead
             //报register该服务器下线
             messageToRegister(new SocketMsg(0, 1, socketServerConfig.name, socketServerConfig.maxOverload,
                     socketServerConfig.socketPort));
-            e.printStackTrace();
             log.error("socket服务器意外关闭，原因：" + e.getMessage());
         }
     }
@@ -54,7 +54,7 @@ public class SocketServerListener implements ApplicationListener<ApplicationRead
              OutputStream output = sock.getOutputStream()) {
             log.info("connect register success.");
             ObjectOutputStream writer = new ObjectOutputStream(sock.getOutputStream());
-            writer.writeObject(socketMsg);
+            writer.writeObject(JSONObject.toJSONString(socketMsg));
             writer.flush();
         } catch (Exception e) {
             log.error("failed to connect register, reason:" + e.getMessage());
@@ -77,7 +77,6 @@ class ServerHandler extends Thread {
                 handle(input, output);
             }
         } catch (Exception e) {
-            e.printStackTrace();
             try {
                 this.sock.close();
             } catch (IOException ioe) {
@@ -93,6 +92,7 @@ class ServerHandler extends Thread {
         writer.flush();
         for (;;) {
             String s = reader.readLine();
+            log.info("[client] get msg:" + s + " from " + sock.getRemoteSocketAddress());
             if (!s.equals("pong")) {
                 throw new IOException("failed to connected" + sock.getRemoteSocketAddress());
             }
