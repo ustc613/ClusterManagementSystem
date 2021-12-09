@@ -2,7 +2,9 @@ package cn.edu.ustc.socketclient.service;
 
 import cn.edu.ustc.socketclient.model.support.ServerInfoMsg;
 import cn.edu.ustc.socketclient.model.support.SocketMsg;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -11,30 +13,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Service
+@Service()
 public class SocketClientService {
 
     private ConcurrentHashMap<String, Socket> socketMap = new ConcurrentHashMap<>();
 
-    public void online(String serverName) {
+    public void online(String clientName) {
+        if (socketMap.containsKey(clientName)) {
+            throw new IllegalArgumentException("client:" + clientName + " is already exist");
+        }
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                createSocketClient(serverName);
+                createSocketClient(clientName);
             }
         });
         t.start();
     }
 
-    public void offline(String serverName) throws IOException {
-        if (!socketMap.contains(serverName)) {
-            throw new IllegalArgumentException("client:" + serverName + "not exist");
+    public void offline(String clientName) throws IOException {
+        log.info(String.valueOf(socketMap));
+        if (!socketMap.containsKey(clientName)) {
+            throw new IllegalArgumentException("client:" + clientName + " not exist");
         }
-        Socket socket = socketMap.get(serverName);
+        Socket socket = socketMap.get(clientName);
         //上报register下线消息
-        messageToRegister(new SocketMsg(0, 0, serverName, 0, 0));
+        messageToRegister(new SocketMsg(0, 0, clientName, 0, 0));
         socket.close();
-        socketMap.remove(serverName);
+        socketMap.remove(clientName);
 
     }
 
@@ -45,11 +51,13 @@ public class SocketClientService {
             log.info("connect register success.");
             ObjectOutputStream writer = new ObjectOutputStream(output);
             var reader = new ObjectInputStream(new BufferedInputStream(input));
-            writer.writeObject(socketMsg);
+            writer.writeObject(JSONObject.toJSONString(socketMsg));
             writer.flush();
 
             if (socketMsg.isOnline == 1) {
-                return (ServerInfoMsg) reader.readObject();
+                String msg = (String) reader.readObject();
+                log.info("get server info success: " + msg);
+                return JSONObject.parseObject(msg, ServerInfoMsg.class);
             }
 
         } catch (Exception e) {
@@ -58,37 +66,40 @@ public class SocketClientService {
         return null;
     }
 
-    private void createSocketClient(String serverName) {
+    private void createSocketClient(String clientName) {
         //上报register该客户端上线
         ServerInfoMsg serverInfoMsg =
-                messageToRegister(new SocketMsg(1, 0, serverName, 0, 0));
+                messageToRegister(new SocketMsg(1, 0, clientName, 0, 0));
         if (serverInfoMsg == null) {
-            throw new RuntimeException("failed to get server info. ");
+            throw new RuntimeException("failed to connect to server. server is busy now.");
         }
         try (Socket sock = new Socket(serverInfoMsg.ip, serverInfoMsg.port);
              InputStream input = sock.getInputStream();
              OutputStream output = sock.getOutputStream()) {
             log.info("connect server success.");
-            socketMap.put(serverName, sock);
+            socketMap.put(clientName, sock);
             sock.setKeepAlive(true);
-            handle(input, output);
+            handle(input, output, clientName, serverInfoMsg.serverName);
         } catch (Exception e) {
             log.error("failed to connect server, reason:" + e.getMessage());
             //上报register该客户端与服务端连接失败
-            messageToRegister(new SocketMsg(0, 0, serverName, 0, 0));
+            if (!StringUtils.equals(e.getMessage(), "Socket closed")) {
+                messageToRegister(new SocketMsg(0, 0, clientName, 0, 0));
+            }
         }
     }
 
-    private static void handle(InputStream input, OutputStream output) throws IOException {
+    private static void handle(InputStream input, OutputStream output, String clientName, String serverName)
+            throws IOException {
         var writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
         var reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-        log.info("[server] " + reader.readLine());
+        reader.readLine();
         for (;;) {
             writer.write("pong");
             writer.newLine();
             writer.flush();
             String resp = reader.readLine();
-            log.info("[server] " + resp);
+            log.info("[client:" + clientName + "] get msg:" + resp + " from server:" + serverName);
             if (!resp.equals("ping")) {
                 throw new IOException("cannot get 'ping' response from server");
             }

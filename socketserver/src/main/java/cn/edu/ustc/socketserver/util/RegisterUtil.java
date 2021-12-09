@@ -2,6 +2,7 @@ package cn.edu.ustc.socketserver.util;
 
 import cn.edu.ustc.socketserver.model.support.ServerInfoMsg;
 import cn.edu.ustc.socketserver.model.support.SocketMsg;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -20,7 +21,6 @@ public class RegisterUtil {
                 t.start();
             }
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("socket register意外关闭，原因：" + e.getMessage());
         }
     }
@@ -40,7 +40,6 @@ class RegisterHandler extends Thread {
              OutputStream output = this.sock.getOutputStream()) {
             handle(input, output);
         } catch (Exception e) {
-            e.printStackTrace();
             try {
                 this.sock.close();
             } catch (IOException ioe) {
@@ -52,10 +51,12 @@ class RegisterHandler extends Thread {
     private void handle(InputStream input, OutputStream output) throws IOException, InterruptedException, ClassNotFoundException {
         var reader = new ObjectInputStream(new BufferedInputStream(sock.getInputStream()));
         var writer = new ObjectOutputStream(sock.getOutputStream());
-        SocketMsg msg = (SocketMsg) reader.readObject();
+        String msg = (String) reader.readObject();
+        SocketMsg socketMsg = JSONObject.parseObject(msg, SocketMsg.class);
         log.info("get msg: " + msg);
-        if (msg.isServe == 0) {
-            writer.writeObject(new ServerInfoMsg("localhost", 2333, "socket-server1"));
+        if (socketMsg.isServe == 0) {
+            writer.writeObject(
+                    JSONObject.toJSONString(new ServerInfoMsg("localhost", 2333, "socket-server1")));
             writer.flush();
         }
     }

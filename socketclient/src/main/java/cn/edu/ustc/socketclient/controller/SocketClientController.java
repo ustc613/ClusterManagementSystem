@@ -22,7 +22,7 @@ public class SocketClientController {
     public boolean offline(@RequestBody SocketClientDto socketServerDto) throws IOException {
         System.out.println(socketServerDto);
         socketClientService.offline(socketServerDto.clientName);
-        return false;
+        return true;
     }
 
     @PostMapping("/online")

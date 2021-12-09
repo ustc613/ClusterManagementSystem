@@ -10,15 +10,13 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler({Exception.class})
     public Object handleGlobalException(Exception e) {
-        e.printStackTrace();
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         return new ApiResponse<>(status.value(), Constant.errorMsg, e);
     }
 
     @ExceptionHandler({IllegalArgumentException.class})
     public ApiResponse handleIllegalArgumentException(Exception e) {
-        e.printStackTrace();
         HttpStatus status = HttpStatus.BAD_REQUEST;
-        return new ApiResponse<>(status.value(), Constant.errorMsg, e);
+        return new ApiResponse<>(status.value(), Constant.badRequestMsg, e.getMessage());
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import javax.validation.constraints.NotNull;
 
-@RestControllerAdvice(basePackages = "cn.edu.ustc.socketserver")
+@RestControllerAdvice(basePackages = "cn.edu.ustc.socketclient")
 public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(@NotNull MethodParameter returnType, @NotNull Class converterType) {
