@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/socket-client")
 public class SocketClientController {
@@ -17,14 +19,15 @@ public class SocketClientController {
     }
 
     @PostMapping("/offline")
-    public boolean offline(@RequestBody SocketClientDto socketServerDto) {
+    public boolean offline(@RequestBody SocketClientDto socketServerDto) throws IOException {
         System.out.println(socketServerDto);
+        socketClientService.offline(socketServerDto.clientName);
         return false;
     }
 
     @PostMapping("/online")
     public boolean online(@RequestBody SocketClientDto socketServerDto) {
-        socketClientService.createSocketClient();
-        return false;
+        socketClientService.online(socketServerDto.clientName);
+        return true;
     }
 }

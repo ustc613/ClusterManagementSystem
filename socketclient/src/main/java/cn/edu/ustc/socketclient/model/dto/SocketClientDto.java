@@ -8,5 +8,5 @@ import lombok.ToString;
 @ToString()
 @EqualsAndHashCode()
 public class SocketClientDto {
-    public String serverName;
+    public String clientName;
 }

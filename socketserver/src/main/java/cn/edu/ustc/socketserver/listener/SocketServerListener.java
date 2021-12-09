@@ -1,6 +1,7 @@
 package cn.edu.ustc.socketserver.listener;
 
 import cn.edu.ustc.socketserver.config.SocketServerConfig;
+import cn.edu.ustc.socketserver.model.support.SocketMsg;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -28,7 +29,9 @@ public class SocketServerListener implements ApplicationListener<ApplicationRead
     public void onApplicationEvent(ApplicationReadyEvent event) {
         try (ServerSocket server = new ServerSocket(socketServerConfig.socketPort)) {
             log.info("启动socket server服务器...");
-            // 上报register该服务器上线
+            //上报register该服务器上线
+            messageToRegister(new SocketMsg(1, 1, socketServerConfig.name, socketServerConfig.maxOverload,
+                    socketServerConfig.socketPort));
             for (;;) {
                 Socket sock = server.accept();
                 sock.setKeepAlive(true);
@@ -36,9 +39,25 @@ public class SocketServerListener implements ApplicationListener<ApplicationRead
                 Thread t = new ServerHandler(sock);
                 t.start();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            //报register该服务器下线
+            messageToRegister(new SocketMsg(0, 1, socketServerConfig.name, socketServerConfig.maxOverload,
+                    socketServerConfig.socketPort));
             e.printStackTrace();
             log.error("socket服务器意外关闭，原因：" + e.getMessage());
+        }
+    }
+
+    private void messageToRegister(SocketMsg socketMsg) {
+        try (Socket sock = new Socket("localhost", 30000);
+             InputStream input = sock.getInputStream();
+             OutputStream output = sock.getOutputStream()) {
+            log.info("connect register success.");
+            ObjectOutputStream writer = new ObjectOutputStream(sock.getOutputStream());
+            writer.writeObject(socketMsg);
+            writer.flush();
+        } catch (Exception e) {
+            log.error("failed to connect register, reason:" + e.getMessage());
         }
     }
 }
