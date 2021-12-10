@@ -34,7 +34,7 @@ public class ClientListener extends Thread {
                 SocketMsg msg = JSONObject.parseObject(string, SocketMsg.class);
 
                 System.out.println("Client Msg："+ msg);
-                ReceiveClientMsg(msg,ip);
+                ReceiveClientMsg(msg,ip,s);
 
                 System.out.println("Client 成功处理");
             }
@@ -51,12 +51,12 @@ public class ClientListener extends Thread {
     // 1. 从 Server 列表 选出一个 Server IP/port
     // 2. 数据库更新 client 数据
     // 3. 把 Server IP/port 消息通知 client （UDP短连接）
-    public void ReceiveClientMsg(SocketMsg msg, String ip) throws SQLException {
+    public void ReceiveClientMsg(SocketMsg msg, String ip,Socket socket) throws SQLException {
         // 从 Server 列表 选出一个 Server IP/port
         ServerInfo s = ServePool.selectOneServer();
         s.currentOverload += 1;
         // 把 Server IP/port 消息通知 client （UDP短连接）
-        SendServerInfoToClient(s,msg,ip);
+        SendServerInfoToClient(s,msg,ip,socket);
         // 数据库更新 client 数据
         DBManager.insertClient(msg,s.msg.name,ip);
         // 数据库更新 server 数据
@@ -64,20 +64,18 @@ public class ClientListener extends Thread {
     }
 
     // 返还分配 Server IP/port 消息给 client
-    public void SendServerInfoToClient(ServerInfo serverInfo,SocketMsg clientMsg,String ip){
+    public void SendServerInfoToClient(ServerInfo serverInfo,SocketMsg clientMsg,String ip,Socket socket){
         try {
             ServerInfoMsg msg = new ServerInfoMsg();
             msg.ip = serverInfo.ip;
             msg.port = serverInfo.msg.port;
             msg.serverName = serverInfo.msg.name;
-            // TODO 该发给哪个 port?
-            Socket s = new Socket(ip,clientMsg.port);
-            OutputStream os = s.getOutputStream();
+            // 原路发回
+            OutputStream os = socket.getOutputStream();
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(os));
             //向Client端发送一条消息
             bw.write(JSONObject.toJSONString(msg));
             bw.flush();
-            s.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
